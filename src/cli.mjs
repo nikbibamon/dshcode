@@ -21,7 +21,7 @@ Usage:
 
 The client sends requests to the remote DSHREM service. It does not execute
 generated code or run autonomous local tools. See docs/HELP.md for details.`;
-const VERSION = '0.4.2';
+const VERSION = '0.4.3';
 
 function option(args, name) { const i = args.indexOf(name); return i < 0 ? null : args[i + 1] ?? null; }
 function checkNode() { const major = Number(process.versions.node.split('.')[0]); if (major < 22) throw new Error('Node.js 22 or newer is required'); }

@@ -2,7 +2,7 @@
   "name": "tvijo-dshrem",
   "displayName": "Tvijo DSHREM",
   "description": "Ask about your code with source evidence and a hard per-task spending cap. Sign in with your Tvijo account; no API keys in the editor.",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/nikbibamon/dshcode.git",

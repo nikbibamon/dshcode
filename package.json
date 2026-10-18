@@ -1,6 +1,6 @@
 {
   "name": "dshrempub",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A small remote DSHREM research and chat client",
   "type": "module",
   "bin": {
