@@ -26,6 +26,7 @@ const THEME_CSS = `
   #plus-menu{position:absolute;bottom:73px;left:12px;display:none;flex-direction:column;min-width:170px;padding:4px;background:var(--raised);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 22px #0005;z-index:2}#plus-menu.open{display:flex}#plus-menu button{text-align:left;padding:7px}
   #messages:has(.welcome){display:flex;flex-direction:column;justify-content:center}
   @media(max-width:340px){header{flex-wrap:wrap}#brand{min-width:75px}#account-status{flex-wrap:wrap}#budget{white-space:normal;overflow-wrap:anywhere;margin-left:0}#signin{font-size:11px;padding:4px}header .icon{min-width:23px;padding:3px}#lang{padding:4px 2px}}
+  nav{flex-wrap:wrap}.product-links{display:flex;gap:3px;padding:2px 8px;border-top:1px solid var(--border)}.product-links button{font-size:10px;color:var(--accent);padding:3px 6px}#usage-items{font-size:11px;overflow-wrap:anywhere}#usage-items p{margin:7px 0}#context-panel:has(#usage-items:not([hidden])){flex:1;overflow:auto;max-height:70vh}
   .toolbar-hidden{display:none!important}.view-panel{display:none}#context-panel.visible{display:block}
 `;
 

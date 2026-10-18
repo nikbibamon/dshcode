@@ -62,6 +62,7 @@ function host() {
       if (blockGrant) await new Promise((resolve) => { release = resolve; });
       return Response.json({ id: 'task-test' });
     }
+    if (url.endsWith('/workspace/usage')) return Response.json({ account: { tenant_id: 'test-tenant', budget: { spent_usd: '0', held_usd: '0', remaining_usd: '.05' } }, scope: { loaded_tasks: 0, total_account_tasks: 0 }, tasks: [] });
     if (url.endsWith('/chat')) return Response.json({ choices: [{ message: { content: 'Test answer' } }], task: { spent_usd: '0.001', held_usd: '0' }, evidence: [] });
     throw new Error('unexpected test URL');
   };
@@ -122,5 +123,16 @@ test('credential attachments and unknown slash commands create no model task', a
     await app.receive({ type: 'ask', question: '/does-not-exist' });
     assert.equal(app.requests.filter(item => !item.url.endsWith('/account')).length, 0);
     assert.ok(app.posts.some((item) => item.type === 'submission' && !item.ok));
+  } finally { app.close(); }
+});
+
+
+test('usage bridge reads private statistics without starting a model task', async () => {
+  const app = host();
+  try {
+    await app.receive({ type: 'usage' });
+    assert.equal(app.requests.filter(item => item.url.endsWith('/workspace/usage')).length, 1);
+    assert.equal(app.requests.filter(item => item.url.endsWith('/tasks')).length, 0);
+    assert.ok(app.posts.some(item => item.type === 'usage' && item.usage.account.tenant_id === 'test-tenant'));
   } finally { app.close(); }
 });

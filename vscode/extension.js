@@ -187,6 +187,28 @@ function activate(context) {
     const url = new URL(client().base);
     return ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ? 'https://dsh.tvijo.com' : url.origin;
   };
+  command('tvijo.productGuide', () => vscode.env.openExternal(vscode.Uri.parse(publicSite() + '/workspace-guide')));
+  command('tvijo.connections', async () => {
+    const picked = await vscode.window.showQuickPick([
+      { label: 'Tvijo managed', id: 'managed', description: 'Active · service credit, limits and receipts; no API key' },
+      { label: 'Your OpenRouter', id: 'openrouter', description: 'Pilot request only · key connection not activated' },
+      { label: 'Your direct provider API', id: 'direct', description: 'Pilot request only · key connection not activated' },
+      { label: 'Read connection and cost guide', id: 'guide', description: 'Tvijo service and provider costs explained' }
+    ], { title: 'Tvijo connection · current inference remains managed' });
+    if (!picked) return;
+    if (picked.id === 'guide') return vscode.env.openExternal(vscode.Uri.parse(publicSite() + '/connections'));
+    const auth = await requireAuth();
+    const state = await client().request('/workspace/connection', { token: auth.access_token, method: 'POST', body: { mode: picked.id } });
+    vscode.window.showInformationMessage(state.preferred_mode === 'managed' ? 'Tvijo: managed service selected.' : 'Tvijo: pilot request saved. Your active route remains Tvijo. No API key or payment was requested.');
+  });
+  command('tvijo.usage', async () => {
+    const auth = await requireAuth();
+    const usage = await client().request('/workspace/usage', { token: auth.access_token });
+    const current = await readAuth();
+    if (!current || current.access_token !== auth.access_token || current.api_base !== client().base) return;
+    if (chatView) await chatView.webview.postMessage({ type: 'usage', usage });
+    else await showDocument('json', JSON.stringify(usage, null, 2));
+  });
   command('tvijo.botGuide', () => vscode.env.openExternal(vscode.Uri.parse(publicSite() + '/bot')));
   command('tvijo.buyCredit', async () => {
     const auth = await requireAuth();
@@ -435,8 +457,8 @@ function activate(context) {
             const auth = await readAuth();
             const live = auth?.access_token && auth.api_base === client().base && !(auth.expires_at && Date.now() >= Date.parse(auth.expires_at));
             await vscode.commands.executeCommand(live ? 'tvijo.account' : 'tvijo.signIn');
-          } else if (['new', 'cancel', 'commands', 'workspace', 'selection', 'path', 'help', 'bot', 'workflow', 'credit', 'terminal', 'settings', 'clearAttachments'].includes(message?.type)) {
-            const id = { new: 'tvijo.newConversation', cancel: 'tvijo.cancelPending', commands: 'tvijo.commands', workspace: 'tvijo.attachFile', selection: 'tvijo.attachSelection', path: 'tvijo.attachPath', help: 'tvijo.help', bot: 'tvijo.botGuide', workflow: 'tvijo.chooseWorkflow', credit: 'tvijo.buyCredit', terminal: 'tvijo.terminal', learn: 'tvijo.learn', feedback: 'tvijo.feedback', settings: 'tvijo.settings', clearAttachments: 'tvijo.clearAttachments' }[message.type];
+          } else if (['new', 'cancel', 'commands', 'workspace', 'selection', 'path', 'help', 'bot', 'workflow', 'credit', 'terminal', 'settings', 'clearAttachments', 'usage', 'connections', 'productGuide'].includes(message?.type)) {
+            const id = { new: 'tvijo.newConversation', cancel: 'tvijo.cancelPending', commands: 'tvijo.commands', workspace: 'tvijo.attachFile', selection: 'tvijo.attachSelection', path: 'tvijo.attachPath', help: 'tvijo.help', bot: 'tvijo.botGuide', workflow: 'tvijo.chooseWorkflow', credit: 'tvijo.buyCredit', terminal: 'tvijo.terminal', learn: 'tvijo.learn', feedback: 'tvijo.feedback', settings: 'tvijo.settings', clearAttachments: 'tvijo.clearAttachments', usage: 'tvijo.usage', connections: 'tvijo.connections', productGuide: 'tvijo.productGuide' }[message.type];
             await handlers.get(id)(); await refreshStatus();
           } else if (message?.type === 'ask' && typeof message.question === 'string') {
             try {

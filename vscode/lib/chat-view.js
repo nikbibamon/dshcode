@@ -13,8 +13,9 @@ function chatHtml(webview) {
 ${THEME_CSS}
 </style></head><body>
 <header><strong id="brand"><span id="brand-mark" aria-hidden="true">›_</span>DSHREM</strong><button id="lang" class="mini-select" type="button" title="Switch language">EN / RU</button><button id="theme" class="icon" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">◐</button><button id="signin" type="button">Sign in</button><button id="new" class="icon" type="button" title="New session" aria-label="New session">＋</button><button id="commands" class="icon" type="button" title="Commands" aria-label="Commands">···</button><button id="settings" class="icon" type="button" title="Settings" aria-label="Settings">⚙</button></header>
-<nav aria-label="Workspace"><button id="tab-chat" type="button" aria-selected="true">Chat</button><button id="tab-context" type="button" aria-selected="false">Context</button><button id="tab-terminal" type="button" aria-selected="false">Terminal</button></nav>
-<main id="messages" aria-live="polite"></main><section id="context-panel" aria-label="Context"><div id="context-items"></div><div id="terminal-info" hidden></div><button id="clear-context" type="button">Clear context</button></section><div id="state" role="status">Connecting…</div>
+<nav aria-label="Workspace"><button id="tab-chat" type="button" aria-selected="true">Chat</button><button id="tab-context" type="button" aria-selected="false">Context</button><button id="tab-usage" type="button" aria-selected="false">Usage</button><button id="tab-terminal" type="button" aria-selected="false">Terminal</button></nav>
+<main id="messages" aria-live="polite"></main><section id="context-panel" aria-label="Context"><div id="context-items"></div><div id="usage-items" hidden></div><div id="terminal-info" hidden></div><button id="clear-context" type="button">Clear context</button></section><div id="state" role="status">Connecting…</div>
+<div class="product-links"><button id="product-guide" type="button">Tvijo AI guide</button><button id="connections" type="button">Connections</button></div>
 <div id="account-status" role="status"><span class="dot">●</span><span id="connection-label">Limited free preview</span><span id="budget"></span></div>
 <form id="form"><div id="attachments" aria-label="Attached context"></div><p id="ocrnote" hidden></p><textarea id="question" aria-label="Ask Tvijo" placeholder="Ask about your project…" maxlength="20000"></textarea><input id="file" type="file" multiple hidden><div class="composer-actions"><button id="plus" class="icon" type="button" title="Add context" aria-label="Add context" aria-haspopup="menu" aria-expanded="false">＋</button><button id="workflow" class="mini-select" type="button" title="Model &amp; workflow"><span>◆</span><span id="workflow-label">Model &amp; workflow</span></button><span class="spacer"></span><button id="cancel" class="mini-select" type="button" title="Cancel task" hidden>Cancel</button><button id="send" type="submit" title="Send message" aria-label="Send message">➤</button></div></form>
 <div id="plus-menu" role="menu" aria-label="Add context"><button id="attach" type="button" role="menuitem">Add file…</button><button id="workspace" type="button" role="menuitem">Choose workspace file…</button><button id="selection" type="button" role="menuitem">Use editor selection</button><button id="path" type="button" role="menuitem">Paste workspace path…</button></div>
@@ -36,6 +37,7 @@ ${THEME_CSS}
   let uploading = false;
   let attachmentCount = 0;
   let lastMessages = null;
+  let lastUsage = null;
   const queue = [];
   const saved = vscode.getState?.();
   if (typeof saved?.draft === 'string') question.value = saved.draft;
@@ -56,6 +58,10 @@ ${THEME_CSS}
     document.getElementById('lang').textContent = locale === 'en' ? 'EN / RU' : 'RU / EN';
     document.getElementById('tab-chat').textContent = t('chat');
     document.getElementById('tab-context').textContent = t('context');
+    document.getElementById('tab-usage').textContent = locale === 'ru' ? 'Расходы' : 'Usage';
+    document.getElementById('product-guide').textContent = locale === 'ru' ? 'Идея Tvijo AI' : 'Tvijo AI guide';
+    document.getElementById('connections').textContent = locale === 'ru' ? 'Подключения' : 'Connections';
+    if (lastUsage) renderUsage(lastUsage);
     document.getElementById('tab-terminal').textContent = t('terminal');
     document.getElementById('signin').textContent = t(lastSignedIn ? 'signedIn' : 'signIn');
     document.getElementById('new').title = t('new');
@@ -97,14 +103,34 @@ ${THEME_CSS}
     document.getElementById('connection-label').textContent = lastSignedIn ? (lastStatus || t('ready')) : t('limited');
   }
   function setTab(tab) {
-    for (const name of ['chat','context','terminal']) document.getElementById('tab-' + name).setAttribute('aria-selected', String(name === tab));
+    for (const name of ['chat','context','terminal','usage']) document.getElementById('tab-' + name).setAttribute('aria-selected', String(name === tab));
     messages.hidden = tab !== 'chat';
-    document.getElementById('context-panel').className = tab === 'context' || tab === 'terminal' ? 'visible' : '';
+    document.getElementById('context-panel').className = tab === 'context' || tab === 'terminal' || tab === 'usage' ? 'visible' : '';
     document.getElementById('context-items').hidden = tab !== 'context';
+    document.getElementById('usage-items').hidden = tab !== 'usage';
     document.getElementById('clear-context').hidden = tab !== 'context';
     document.getElementById('terminal-info').hidden = tab !== 'terminal';
     document.getElementById('terminal-info').textContent = t('terminalInfo');
     if (tab === 'terminal') vscode.postMessage({type:'terminal'});
+  }
+  function renderUsage(value) {
+    lastUsage = value;
+    const box = document.getElementById('usage-items'); box.replaceChildren();
+    const add = (text) => { const row = document.createElement('p'); row.textContent = text; box.append(row); };
+    const a = value.account, ru = locale === 'ru';
+    add(ru ? 'Tvijo: личный учет' : 'Tvijo: private usage');
+    add((ru ? 'Всего расход $' : 'Lifetime spend $') + a.budget.spent_usd + (ru ? ' · резерв $' : ' · held $') + a.budget.held_usd + (ru ? ' · доступно $' : ' · available $') + a.budget.remaining_usd);
+    add((ru ? 'Дневной остаток сервиса: ' : 'Service daily remaining: ') + (a.budget.daily_remaining_usd === undefined ? '—' : '$' + a.budget.daily_remaining_usd));
+    if (a.preview) add((ru ? 'Проба: ' : 'Preview: ') + a.preview.tasks_remaining + (ru ? ' задач · ' : ' tasks · ') + a.preview.tokens_remaining + (ru ? ' токенов' : ' tokens'));
+    if (value.knowledge) add((ru ? 'Личные источники: ' : 'Private knowledge: ') + value.knowledge.indexed_files + (ru ? ' файлов · ' : ' files · ') + value.knowledge.indexed_chunks + (ru ? ' фрагментов' : ' chunks'));
+    add((ru ? 'Загружено задач: ' : 'Loaded tasks: ') + value.scope.loaded_tasks + ' / ' + value.scope.total_account_tasks);
+    for (const item of value.tasks) {
+      add(item.title + ' · ' + item.model + ' / ' + item.mode + ' · ' + item.status);
+      add((ru ? 'Токены ' : 'Tokens ') + (item.tokens ?? '—') + (ru ? ' · списано $' : ' · charged $') + item.budget.spent_usd + (ru ? ' · лимит $' : ' · cap $') + item.budget.max_usd);
+      add((ru ? 'Провайдер ' : 'Provider ') + (item.provider_cost_usd === null ? '—' : '$' + item.provider_cost_usd) + (ru ? ' · сервисная разница ' : ' · service difference ') + (item.service_difference_usd === null ? '—' : '$' + item.service_difference_usd));
+      for (const call of item.calls) add(call.provider + ' / ' + call.model + ' · in ' + call.tokens_in + ' / out ' + call.tokens_out + ' · ' + call.outcome);
+    }
+    add(ru ? 'Квота подписки и экономия кеша не измерены. — означает неизвестно.' : 'Subscription quota and cache savings are not measured. — means unknown.');
   }
   question.addEventListener('input', saveDraft);
   function controls() {
@@ -197,8 +223,11 @@ ${THEME_CSS}
       controls(); renderAttachments(data.attachments || []);
       lastSignedIn = !!data.signedIn;
       lastAccount = data.account || null;
+      if (lastUsage && (!data.signedIn || !data.account || data.account.tenant_id !== lastUsage.account.tenant_id)) { lastUsage = null; document.getElementById('usage-items').replaceChildren(); }
       document.getElementById('signin').textContent = t(lastSignedIn ? 'signedIn' : 'signIn');
       renderBudget(lastAccount);
+    } else if (data.type === 'usage') {
+      renderUsage(data.usage); setTab('usage');
     } else if (data.type === 'submission') {
       submitting = false;
       controls();
@@ -220,6 +249,9 @@ ${THEME_CSS}
   document.getElementById('new').addEventListener('click', () => vscode.postMessage({type:'new'}));
   document.getElementById('cancel').addEventListener('click', () => vscode.postMessage({type:'cancel'}));
   for (const type of ['commands','workspace','selection','path','workflow']) document.getElementById(type).addEventListener('click', () => { plusMenu.className = ''; document.getElementById('plus').setAttribute('aria-expanded','false'); vscode.postMessage({type}); });
+  document.getElementById('tab-usage').addEventListener('click', () => { setTab('usage'); vscode.postMessage({type:'usage'}); });
+  document.getElementById('connections').addEventListener('click', () => vscode.postMessage({type:'connections'}));
+  document.getElementById('product-guide').addEventListener('click', () => vscode.postMessage({type:'productGuide'}));
   document.getElementById('settings').addEventListener('click', () => vscode.postMessage({type:'settings'}));
   document.getElementById('tab-chat').addEventListener('click', () => setTab('chat'));
   document.getElementById('tab-context').addEventListener('click', () => setTab('context'));

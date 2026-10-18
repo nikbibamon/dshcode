@@ -97,3 +97,20 @@ test('theme uses cool blue palettes and embeds both interface languages', () => 
   assert.match(html, /role="menu"/);
   assert.doesNotMatch(html, /#f97316|#ff7a00|orange/i);
 });
+
+
+test('private usage tab requests receipts and clears them when the account changes', () => {
+  const view = sidebar();
+  let clearCount = 0;
+  view.element('usage-items').replaceChildren = () => { clearCount++; };
+  view.emit('tab-usage:click', {});
+  assert.equal(view.outgoing.at(-1).type, 'usage');
+  assert.equal(view.element('tab-usage').attributes['aria-selected'], 'true');
+  view.emit('window:message', { data: { type: 'usage', usage: { account: { tenant_id: 'first', budget: { spent_usd:'0.01', held_usd:'0', remaining_usd:'0.04' } }, scope: { loaded_tasks:0, total_account_tasks:0 }, tasks:[] } } });
+  view.emit('window:message', { data: { type: 'state', signedIn:false, messages:[], attachments:[] } });
+  assert.equal(clearCount, 2, 'one render and one account-change clear');
+  view.emit('connections:click', {});
+  assert.equal(view.outgoing.at(-1).type,'connections');
+  view.emit('product-guide:click', {});
+  assert.equal(view.outgoing.at(-1).type,'productGuide');
+});

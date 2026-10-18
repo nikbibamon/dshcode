@@ -4,6 +4,9 @@ const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 
 const ACTIONS = [
+  ['tvijo.usage', 'Private usage and provider receipts', '/usage'],
+  ['tvijo.connections', 'Connections and BYOK pilot status', '/connections'],
+  ['tvijo.productGuide', 'Tvijo AI / Centavra / DSHREM guide', '/guide'],
   ['tvijo.terminal', 'Open project terminal', '/terminal'],
   ['tvijo.learn', 'Learn DSHREM', '/learn'],
   ['tvijo.feedback', 'Send feedback', '/feedback'],
@@ -32,6 +35,7 @@ const ACTIONS = [
 ];
 
 const SLASH = {
+  usage: 'tvijo.usage', connections: 'tvijo.connections', guide: 'tvijo.productGuide',
   terminal: 'tvijo.terminal', learn: 'tvijo.learn', feedback: 'tvijo.feedback',
   workflow: 'tvijo.chooseWorkflow', botsetup: 'tvijo.configureBot', botstart: 'tvijo.startBot', botstop: 'tvijo.stopBot', bot: 'tvijo.botGuide', credit: 'tvijo.buyCredit',
   help: 'tvijo.help', new: 'tvijo.newConversation', attach: 'tvijo.attachFile', selection: 'tvijo.attachSelection',
