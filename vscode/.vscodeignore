@@ -1,0 +1,7 @@
+test/**
+*.vsix
+**/*.vsix
+**/.env*
+**/auth.json
+**/node_modules/**
+**/.git/**
